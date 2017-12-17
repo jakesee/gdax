@@ -66,8 +66,14 @@ module.exports = function(product, baseAmount) {
 					if(lastOrder.settled == true)
 					{
 						this.syncAccounts();
-						state = 'wts';
 						console.log('bought', lastOrder.size, '@', lastOrder.price);
+						if(lastOrder.done_reason == 'canceled') state = 'wtb';
+						else if(lastOrder.done_reason == 'filled') state = 'wts';
+						else {
+							console.log(lastOrder);
+							console.log('LastOrder done_reason', lastOrder.done_reason);
+							process.exit();
+						}
 					}
 				});
 			}
@@ -92,8 +98,14 @@ module.exports = function(product, baseAmount) {
 					if(lastOrder.settled == true)
 					{
 						this.syncAccounts();
-						state = 'wtb';
 						console.log('sold', lastOrder.size, '@', lastOrder.price);
+						if(lastOrder.done_reason == 'canceled') state = 'wts';
+						else if(lastOrder.done_reason == 'filled') state = 'wtb';
+						else {
+							console.log(lastOrder);
+							console.log('LastOrder done_reason', lastOrder.done_reason);
+							process.exit();
+						}
 					}
 				});
 			}
@@ -149,7 +161,7 @@ module.exports = function(product, baseAmount) {
 	}
 
 	this.getOrder = function(orderId) {
-		/* Sell Order, Settled
+		/* Sell Order, Settled, filled
 		{ id: '2603eaa2-7605-494b-825c-4f9d4a2e090e',
 		  price: '0.01035000',
 		  size: '16.00000000',
@@ -168,7 +180,7 @@ module.exports = function(product, baseAmount) {
 		  status: 'done',
 		  settled: true }
 
-		// Buy order, Settled
+		// Buy order, Settled, filled
 		{ id: '3582948d-b94c-4618-94e6-3885f77d4c17',
 		  price: '0.01880000',
 		  size: '10.00000000',
@@ -220,6 +232,25 @@ module.exports = function(product, baseAmount) {
 		  executed_value: '0.0000000000000000',
 		  status: 'open',
 		  settled: false }
+
+		// Buy Order, settled, cancelled (partial) fill
+		{ id: '8e00f7f3-4d2a-47f9-9846-9e244284ecc8',
+		  price: '0.01692000',
+		  size: '6.75180900',
+		  product_id: 'LTC-BTC',
+		  side: 'buy',
+		  stp: 'dc',
+		  type: 'limit',
+		  time_in_force: 'GTC',
+		  post_only: true,
+		  created_at: '2017-12-17T19:08:23.888704Z',
+		  done_at: '2017-12-17T19:08:53.919Z',
+		  done_reason: 'canceled',
+		  fill_fees: '0.0000000000000000',
+		  filled_size: '2.79840511',
+		  executed_value: '0.0473490144612000',
+		  status: 'done',
+		  settled: true }
 		*/
 
 		return new Promise((resolve, reject) => {
