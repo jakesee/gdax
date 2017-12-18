@@ -1,20 +1,28 @@
-var Gdax = require('./gdax.js');
+// utility
 var tick = require('animation-loops');
 var columnify = require('columnify');
 var _ = require('lodash');
 // formatting numbers: http://mathjs.org/docs/reference/functions/format.html
+// logging
+var log = require('loglevel');
+log.setLevel(process.env.logLevel);
 
-const products = ['BTC-USD', 'LTC-USD', 'LTC-BTC'];
-var gdax = new Gdax(products);
+// GDAX exchange client
+var config = {
+    'key': process.env.gdKey,
+    'b64secret': process.env.gdSecret,
+    'passphrase': process.env.gdPassphrase,
+    'apiURI': 'https://api.gdax.com',
+}
+var Gdax = require('./gdax.js');
+var gdax = new Gdax(config.key, config.b64secret, config.passphrase, config.apiURI);
+gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']);
 
 // trader
 var GDAXTrader = require('./gdax-trader.js');
-var trader = new GDAXTrader('LTC-BTC');
+var trader = new GDAXTrader(gdax, 'LTC-BTC');
 
-gdax.run();
-
-var wait = require('wait-for-stuff');
-
+// game loop
 var lastTime = 0;
 tick.add((elapsed, delta, stop) => {
 
@@ -44,14 +52,14 @@ tick.add((elapsed, delta, stop) => {
 
 	var spot = Number(snapshot['LTC-BTC'].ticker.price);
 	var efficient = Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price);
-	console.log(trader.getState(), "spot, efficient", spot, efficient);
+	log.debug(trader.getState(), "spot, efficient", spot, efficient);
 	try
 	{
-		trader.trade(snapshot, spot, efficient);
+		// trader.play(gdax, snapshot, spot, efficient);
 	}
 	catch(err)
 	{
-		console.log(err);
+		log.trace(err);
 		process.exit();
 	}
 });
