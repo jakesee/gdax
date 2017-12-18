@@ -39,7 +39,7 @@ module.exports = function(product, baseAmount) {
     wait.for.promise(this.syncAccounts());
     console.log('BTC:', accounts['BTC'].available, 'LTC:', accounts['LTC'].available)
 
-    this.getState = function() { return this.state; }
+    this.getState = function() { return state; }
 
 	this.trade = function(snapshot, spot, efficient) {
 
