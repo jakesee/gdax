@@ -80,11 +80,19 @@ module.exports = function(product, baseAmount) {
 
 			if(spot > efficient)
 			{
-				console.log('cancel buy');
-				this.cancelOrder(lastOrder.id).then(value => {
-					lastOrder = null;
-					state = 'wtb';
-				});
+				if(Number(lastOrder.filled_size) > 0) 
+				{
+					// cancel if only not started filling
+					console.log('filling order, cannot cancel');
+				}
+				else
+				{
+					console.log('cancel buy');
+					this.cancelOrder(lastOrder.id).then(value => {
+						lastOrder = null;
+						state = 'wtb';
+					});
+				}
 			}
 		}
 		else if(state == 'sell')
@@ -112,11 +120,19 @@ module.exports = function(product, baseAmount) {
 
 			if(spot < efficient)
 			{
-				console.log('cancel sell');
-				this.cancelOrder(lastOrder.id).then(value => {
-					lastOrder = null;
-					state = 'wts';
-				});
+				if(Number(lastOrder.filled_size) > 0) 
+				{
+					// cancel if only not started filling
+					console.log('filling order, cannot cancel');
+				}
+				else
+				{
+					console.log('cancel sell');
+					this.cancelOrder(lastOrder.id).then(value => {
+						lastOrder = null;
+						state = 'wts';
+					});
+				}
 			}
 		}
 	}
