@@ -44,7 +44,7 @@ tick.add((elapsed, delta, stop) => {
 
 	var spot = Number(snapshot['LTC-BTC'].ticker.price);
 	var efficient = Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price);
-	console.log('spot, efficient', spot, efficient);
+	console.log(trader.getState(), 's', spot, 'e', efficient);
 	try
 	{
 		trader.trade(snapshot, spot, efficient);

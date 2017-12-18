@@ -39,6 +39,8 @@ module.exports = function(product, baseAmount) {
     wait.for.promise(this.syncAccounts());
     console.log('BTC:', accounts['BTC'].available, 'LTC:', accounts['LTC'].available)
 
+    this.getState = function() { return this.state; }
+
 	this.trade = function(snapshot, spot, efficient) {
 
 		if((state == null || state == 'wts') && spot > efficient && accounts[baseCurrency].available > 0.00001)
@@ -66,10 +68,14 @@ module.exports = function(product, baseAmount) {
 					if(lastOrder.settled == true)
 					{
 						this.syncAccounts();
-						console.log('bought', lastOrder.size, '@', lastOrder.price);
-						if(lastOrder.done_reason == 'canceled') state = 'wtb';
-						else if(lastOrder.done_reason == 'filled') state = 'wts';
-						else {
+						
+						if(lastOrder.done_reason == 'canceled') {
+							console.log('cancelled buy', lastOrder.size, '@', lastOrder.price);
+							state = 'wtb';
+						} else if(lastOrder.done_reason == 'filled') {
+							console.log('bought', lastOrder.size, '@', lastOrder.price);
+							state = 'wts';
+						} else {
 							console.log(lastOrder);
 							console.log('LastOrder done_reason', lastOrder.done_reason);
 							process.exit();
@@ -106,10 +112,13 @@ module.exports = function(product, baseAmount) {
 					if(lastOrder.settled == true)
 					{
 						this.syncAccounts();
-						console.log('sold', lastOrder.size, '@', lastOrder.price);
-						if(lastOrder.done_reason == 'canceled') state = 'wts';
-						else if(lastOrder.done_reason == 'filled') state = 'wtb';
-						else {
+						if(lastOrder.done_reason == 'canceled') {
+							console.log('cancelled sell', lastOrder.size, '@', lastOrder.price);
+							state = 'wts';
+						} else if(lastOrder.done_reason == 'filled') {
+							console.log('sold', lastOrder.size, '@', lastOrder.price);
+							state = 'wtb';
+						} else {
 							console.log(lastOrder);
 							console.log('LastOrder done_reason', lastOrder.done_reason);
 							process.exit();
