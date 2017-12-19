@@ -1,3 +1,5 @@
+"use strict";
+
 var _ = require('lodash');
 var math = require('mathjs');
 var wait = require('wait-for-stuff');
@@ -7,115 +9,144 @@ var log = require('loglevel');
 
 //const sandboxURI = 'https://api-public.sandbox.gdax.com';
 
-module.exports = function(gdax, product, baseAmount) {
+module.exports = function(gdax, product) {
 
 	var self = this;
-	var product = product;
-	var state = null;
-	var lastOrder = null;
-	var baseCurrency = product.split('-');
-	var quoteCurrency = baseCurrency[1];
-	baseCurrency = baseCurrency[0];
-	var accounts = wait.for.promise(gdax.getAccounts());
-	log.debug(accounts[baseCurrency].available, accounts[quoteCurrency].available);
+	var _product = product;
+	var _state0 = null; // the initial state; null initially; the bot will determine it's starting state based on circumstances; 
+	var _state = null; // the current state; 
+	var _lastOrder = null;
+	var _lastBuyPrice = null;
+	var _lastSellPrice = null;
+	var _baseCurrency = product.split('-');
+	var _quoteCurrency = _baseCurrency[1];
+	_baseCurrency = _baseCurrency[0];
+	var _accounts = wait.for.promise(gdax.getAccounts());
+	log.debug(_baseCurrency, _accounts[_baseCurrency].available, _quoteCurrency, _accounts[_quoteCurrency].available);
 
-    this.getState = function() { return state; }
+    this.getState = function() { return _state; }
 
-	this.play = function(gdax, snapshot, spot, efficient) {
+	this.trade = function(gdax, snapshot, spot, efficient) {
 
-		if((state == null || state == 'wts') && spot > efficient && accounts[baseCurrency].available > 0.00001)
+		var undervalued = spot < efficient; // true if undervalued, false if overvalued
+
+		if((_state == null || _state == 'wts') && !undervalued && _accounts[_baseCurrency].available > 0.000001)
 		{
-			this.placeSellOrder(gdax, snapshot, product)
+			this.placeSellOrder(gdax, snapshot);
 		}
-		else if((state == null || state == 'wtb')  && spot < efficient  && accounts[quoteCurrency].available > 0.00001)
+		else if((_state == null || _state == 'wtb')  && undervalued  && _accounts[_quoteCurrency].available > 0.000001)
 		{
-			this.placeBuyOrder(gdax, snapshot, product);
+			this.placeBuyOrder(gdax, snapshot);
 		}
-		else if(state == 'buy')
+		else if(_state == 'buy')
 		{
-			this._trading(gdax, 'buy', 'wtb', 'wts', spot <= lastOrder.price, spot > efficient);
+			let bidTooLow = _lastOrder.price < snapshot[_product].bids[5].price;
+			this.checkOrder(gdax, 'bought', 'wts', 'wtb', !undervalued, bidTooLow);
 		}
-		else if(state == 'sell')
+		else if(_state == 'sell')
 		{
-			this._trading(gdax, 'sell', 'wts', 'wtb', spot >= lastOrder.price, spot < efficient);
+			let askTooHigh = _lastOrder.price > snapshot[_product].asks[5].price;
+			this.checkOrder(gdax, 'sold', 'wtb', 'wts', undervalued, askTooHigh);
 		}
 	}
 
-	this._trading = function(gdax, state, stateCancelled, stateDone, checkOrder, cancelOrder) {
+	this.checkOrder = function(gdax, verb, stateDone, stateCancelled, cancelOrder, cancelFill) {
 
-        log.debug(state, lastOrder.price, spot);
-
-        if(checkOrder)
-        {
-            // check order whether filled
-            gdax.getOrder(lastOrder.id).then(order => {
-                lastOrder = order;
-                if(lastOrder.settled == true)
-                {
-                    gdax.getAccounts();
-                    
-                    if(lastOrder.done_reason == 'canceled') {
-                        log.info('cancelled buy', lastOrder.size, '@', lastOrder.price);
-                        state = stateCancelled;
-                    } else if(lastOrder.done_reason == 'filled') {
-                        log.info('bought', lastOrder.size, '@', lastOrder.price);
-                        state = stateDone;
-                    } else {
-                        log.debug(lastOrder);
-                        log.info('LastOrder done_reason', lastOrder.done_reason);
-                        process.exit();
-                    }
-                }
-            });
-        }
-
-        if(cancelOrder)
-        {
-            if(Number(lastOrder.filled_size) > 0) 
-            {
-                // cancel if only not started filling
-                log.info('filling order, cannot cancel');
-            }
-            else
-            {
-                gdax.cancelOrder(lastOrder.id).then(value => {
-                    lastOrder = null;
-                    log.info('cancel', state);
-                    state = stateCancelled;
-                });
-            }
-        }
+		gdax.getOrder(_lastOrder.id).then(order => {
+			if(order.message == 'NotFound') {
+	        	log.error('Exited. _lastOrder not found:', _lastOrder);
+	        	_lastOrder = null;
+				process.exit();
+	    	} else {
+	            _lastOrder = order; // update order
+	            log.info(_state, _lastOrder.filled_size, "/", _lastOrder.size, "@", _lastOrder.price);
+	    	
+	            if(_lastOrder.settled == true) {
+	                _accounts = wait.for.promise(gdax.getAccounts());
+	                if(_lastOrder.done_reason == 'canceled') {
+	                    log.info('cancelled', _state, _lastOrder.size, '@', _lastOrder.price);
+	                    if(!(Number(_lastOrder.filled_size) > 0)) { // cancelled and nothing filled, then we continue previous state
+	                    	_state = stateCancelled;
+	                    	log.info('_lastOrder cancelled without fill. Repeating', _state);
+	                    } else {
+	                    	log.error('Exited. _lastOrder cancelled and partially filled:', _lastOrder);
+	                    	process.exit();
+	                    }
+	                } else if(_lastOrder.done_reason == 'filled') { // check order whether filled
+	                    log.info(verb, _lastOrder.size, '@', _lastOrder.price);
+	                    if(_lastOrder.side == 'buy') _lastBuyPrice = _lastOrder.price;
+	                    else if(_lastOrder.side == 'sell') _lastSellPrice = _lastOrder.price;
+	                    else {
+	                    	log.error('Exited. Cannot record _lastOrder.price because _lastOrder side unknown:', _lastOrder);
+	                    	process.exit();
+	                    }
+	                } else {
+	                	log.error('Exited. _lastOrder settlled with unknown done_reason:', _lastOrder);
+	                    process.exit();
+	                }
+	            } else if(cancelOrder) {
+	            	log.info('Cancelling Order...');
+		            if(Number(_lastOrder.filled_size) > 0) { // check whether order is partially filled
+		            	if(cancelFill) {
+		            		gdax.cancelOrder(_lastOrder.id).then(value => {
+			                    log.info('cancel', _state);
+			                    _state = stateDone; // set to null because now don't know which position is better
+			                });
+		            	} else {
+			                log.info('filling order, cannot cancel'); // cancel if only not started filling
+		            	}
+		            } else {
+		                gdax.cancelOrder(_lastOrder.id).then(value => {
+		                    log.info('cancel', _state);
+		                    _state = stateCancelled;
+		                });
+		            }
+		        }
+		    }
+	    });
     }
 
-	this.placeBuyOrder = function(gdax, snapshot, product) {
-		let size = parseInt(accounts[quoteCurrency].available / snapshot[product].bids[0].price * 1000000) / 1000000;
-		const buyParams = {
-		  'product_id': product,
-		  'price': snapshot[product].bids[0].price,
-		  'size': size,
-		  'type': 'limit',
-		  'post_only': true,
-		};
+	this.placeBuyOrder = function(gdax, snapshot) {
+		// set initial state, this will determine our buy and sell price pairs
+		if(_state0 === null) _state0 = 'buy';
+		let size = 1; //parseInt(_accounts[_quoteCurrency].available / snapshot[_product].bids[3].price);
+		if(_state0 === 'buy' || _lastSellPrice > snapshot[_product].bids[3].price) {
+			const buyParams = {
+			  'product_id': _product,
+			  'price': snapshot[_product].bids[3].price,
+			  'size': size,
+			  'type': 'limit',
+			  'post_only': true,
+			};
 
-		lastOrder = wait.for.promise(gdax.buy(buyParams));
-		state = 'sell';
-		log.debug(lastOrder);
-		log.info(state, lastOrder.size, '@', lastOrder.price);
+			_lastOrder = wait.for.promise(gdax.buy(buyParams));
+			_state = 'buy';
+			log.debug(_lastOrder);
+			log.info(_state, _lastOrder.size, '@', _lastOrder.price);
+		} else {
+			log.info('Cannot buy above last sell price: ', _lastSellPrice);
+		}
 	}
 
-	this.placeSellOrder = function(gdax, snapshot, product) {
-		const sellParams = {
-		  'product_id': product,
-		  'price': snapshot[product].asks[0].price,
-		  'size': accounts[baseCurrency].available,
-		  'type': 'limit',
-		  'post_only': true,
-		};
+	this.placeSellOrder = function(gdax, snapshot) {
+		// set initial state, this will determine our buy and sell price pairs
+		if(_state0 === null) _state0 = 'sell';
+		if(_state0 === 'sell' || _lastBuyPrice < snapshot[_product].asks[3].price) {
+			const sellParams = {
+			  'product_id': _product,
+			  'price': snapshot[_product].asks[3].price,
+			  'size': _accounts[_baseCurrency].available,
+			  'type': 'limit',
+			  'post_only': true,
+			};
 
-		lastOrder = wait.for.promise(gdax.sell(snapshot, product));
-		state = 'buy';
-		log.debug(lastOrder);
-		log.info(state, lastOrder.size, '@', lastOrder.price);
+			_lastOrder = wait.for.promise(gdax.sell(sellParams));
+			_state = 'sell';
+			log.debug(_lastOrder);
+			log.info(_state, _lastOrder.size, '@', _lastOrder.price);
+		} else {
+			log.info('Cannot sell below last buy price: ', _lastBuyPrice);
+		}
 	}
 
 }

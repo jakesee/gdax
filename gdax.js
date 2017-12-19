@@ -1,3 +1,5 @@
+"use strict";
+
 var log = require('loglevel');
 const WebSocket = require('ws');
 const _ = require('lodash');
@@ -125,6 +127,7 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
         	process.exit();
         });
 
+        return this;
     };
 
     this.getData = function () { 

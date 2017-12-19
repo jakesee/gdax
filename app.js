@@ -1,3 +1,5 @@
+"use strict";
+
 // utility
 var tick = require('animation-loops');
 var columnify = require('columnify');
@@ -16,7 +18,7 @@ var config = {
 }
 var Gdax = require('./gdax.js');
 var gdax = new Gdax(config.key, config.b64secret, config.passphrase, config.apiURI);
-gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']);
+gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']).live();
 
 // trader
 var GDAXTrader = require('./gdax-trader.js');
@@ -55,7 +57,7 @@ tick.add((elapsed, delta, stop) => {
 	log.debug(trader.getState(), "spot, efficient", spot, efficient);
 	try
 	{
-		// trader.play(gdax, snapshot, spot, efficient);
+		trader.trade(gdax, snapshot, spot, efficient);
 	}
 	catch(err)
 	{
