@@ -54,6 +54,7 @@ tick.add((elapsed, delta, stop) => {
 
 	var spot = Number(snapshot['LTC-BTC'].ticker.price);
 	var efficient = Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price);
+	efficient = parseInt(efficient * 100000) / 100000;
 	log.debug(trader.getState(), "spot, efficient", spot, efficient);
 	try
 	{

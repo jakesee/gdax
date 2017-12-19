@@ -198,6 +198,14 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
         });
     }
 
+    this.getOrders = function() {
+      return new Promise((resolve, reject) => {
+          authedClient.getOrders((err, res, data) => { 
+            resolve(data);
+          });
+      })
+    }
+
     this.getOrder = function(orderId) {
         /* Sell Order, Settled, filled
         { id: '2603eaa2-7605-494b-825c-4f9d4a2e090e',
