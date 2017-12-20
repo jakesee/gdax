@@ -21,6 +21,7 @@ module.exports = function(gdax, product) {
 	var _baseCurrency = product.split('-');
 	var _quoteCurrency = _baseCurrency[1];
 	var _tooManyOpenSells = true;
+	var _maxOpenedSells = 6;
 	_baseCurrency = _baseCurrency[0];
 	var _accounts = wait.for.promise(gdax.getAccounts());
 	log.debug(_baseCurrency, _accounts[_baseCurrency].available, _quoteCurrency, _accounts[_quoteCurrency].available);
@@ -40,7 +41,7 @@ module.exports = function(gdax, product) {
 		{
 			gdax.getOrders().then((orders) => {
 				var orders = _.takeWhile(orders, (order) => { return order.side == 'sell' });
-				if(orders.length >= 10 || _accounts[_baseCurrency].available >= 6)
+				if(orders.length >= _maxOpenedSells || _accounts[_baseCurrency].available >= _maxOpenedSells)
 				{
 					_tooManyOpenSells = true;
 					log.info('_tooManyOpenSells:', orders.length, _baseCurrency, 'available:', _accounts[_baseCurrency].available);
