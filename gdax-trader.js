@@ -131,9 +131,12 @@ module.exports = function(gdax, product) {
         };
 
         _lastOrder = wait.for.promise(gdax.buy(buyParams));
-        _state = 'buy';
-        log.debug(_lastOrder);
-        log.info(_state, _lastOrder.size, '@', _lastOrder.price);
+        if(_lastOrder.status != 'pending') {
+        	log.error('cannot buy', _lastOrder);
+        } else {
+	        _state = 'buy';
+	        log.info(_state, _lastOrder.size, '@', _lastOrder.price);
+        }
     }
 
     this.placeSellOrder = function(gdax, snapshot, efficient) {
@@ -155,5 +158,4 @@ module.exports = function(gdax, product) {
             log.info('sell', order.size, '@', order.price);
         }
     }
-
 }
