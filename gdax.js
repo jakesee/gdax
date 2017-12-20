@@ -50,11 +50,11 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
         });
 
         if(ws.readyState !== ws.OPEN)
-    	{
-    		log.debug('Websocket not ready');
-    		wait.for.predicate(() => { return ws.readyState == ws.OPEN });
-    		log.debug('Websocket ready');
-    	}
+      	{
+      		log.debug('Websocket not ready');
+      		wait.for.predicate(() => { return ws.readyState == ws.OPEN });
+      		log.debug('Websocket ready');
+      	}
 
         // As the data streams in, update our data structures
         ws.on('message', data => {
