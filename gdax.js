@@ -200,7 +200,7 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
 
     this.getOrders = function() {
       return new Promise((resolve, reject) => {
-          authedClient.getOrders((err, res, data) => { 
+          authedClient.getOrders((err, res, data) => {
             resolve(data);
           });
       })

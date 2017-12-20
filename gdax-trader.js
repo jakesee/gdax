@@ -35,21 +35,19 @@ module.exports = function(gdax, product) {
 		if(_state == 'wts')
 		{
 			this.placeSellOrder(gdax, snapshot, efficient);
-			// log.info('SELL');
 		}
 		else if((_state == null || _state == 'wtb')  && undervalued  && _accounts[_quoteCurrency].available > 0.000001)
 		{
-			gdax.getOrders().then((err, res, data) => {
-				var orders = _.takeWhile(data, (order) => { return order.side == 'sell' });
-				if(orders.length > 8)
+			gdax.getOrders().then((orders) => {
+				var orders = _.takeWhile(orders, (order) => { return order.side == 'sell' });
+				if(orders.length >= 10 || _accounts[_baseCurrency].available >= 6)
 				{
 					_tooManyOpenSells = true;
-					log.info('_tooManyOpenSells:', orders.length);
+					log.info('_tooManyOpenSells:', orders.length, _baseCurrency, 'available:', _accounts[_baseCurrency].available);
 				}
 				else _tooManyOpenSells = false;
 			});
 			if(!_tooManyOpenSells) this.placeBuyOrder(gdax, snapshot);
-			// log.info('BUY');
 		}
 		else if(_state == 'buy')
 		{
