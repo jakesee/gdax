@@ -18,7 +18,7 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
     var passphrase = passphrase;
     var apiURI = apiURI;
     var mock = true;
-    var authedClient = null;
+    var authedClient = new Gdax.AuthenticatedClient(key, b64secret, passphrase, apiURI);;
 
     this.live = function() {
         mock = false;
@@ -35,7 +35,6 @@ module.exports = function(key, b64secret, passphrase, apiURI) {
                 'asks': {}, // hash
             }
         });
-        authedClient = new Gdax.AuthenticatedClient(key, b64secret, passphrase, apiURI);
 
         // open the GDAX WebSocket Feed
         ws.on('open',() => {

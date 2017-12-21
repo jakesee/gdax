@@ -21,8 +21,10 @@ var gdax = new Gdax(config.key, config.b64secret, config.passphrase, config.apiU
 gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']).live();
 
 // trader
+var seller = require('./seller.js');
 var GDAXTrader = require('./gdax-trader.js');
 var trader = new GDAXTrader(gdax, 'LTC-BTC');
+seller = new seller(gdax, 'LTC-BTC', 0.238);
 
 // game loop
 var lastTime = 0;
@@ -58,7 +60,8 @@ tick.add((elapsed, delta, stop) => {
 	log.debug(trader.getState(), "spot, efficient", spot, efficient);
 	try
 	{
-		trader.trade(gdax, snapshot, spot, efficient);
+		//trader.trade(gdax, snapshot, spot, efficient);
+		seller.trade(gdax, snapshot, spot, efficient);
 	}
 	catch(err)
 	{
