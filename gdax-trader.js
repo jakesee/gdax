@@ -5,9 +5,6 @@ var math = require('mathjs');
 var wait = require('wait-for-stuff');
 var log = require('loglevel');
 
-
-//const sandboxURI = 'https://api-public.sandbox.gdax.com';
-
 module.exports = function(gdax, product) {
 
     var self = this;
@@ -33,14 +30,15 @@ module.exports = function(gdax, product) {
 
         if((_state == null || _state == 'wtb')  && undervalued  && _accounts[_quoteCurrency].available > 0.000001)
         {
-            this.updateOpenSells(gdax);
-            if(!_tooManyOpenSells) this.placeBuyOrder(gdax, snapshot);
-            else {
-                // ask seller to help to sell
-            }
+            // this.updateOpenSells(gdax);
+            // if(!_tooManyOpenSells) this.placeBuyOrder(gdax, snapshot);
+            // else {
+            //     // ask seller to help to sell
+            // }
+            this.placeBuyOrder(gdax, snapshot);
         }
         else if(_state == 'wts') {
-            this.placeSellOrder(gdax, snapshot, efficient);
+            this.placeSellOrder(gdax, snapshot, efficient, _lastOrder);
         }  
         else if(_state == 'buy')
         {
@@ -107,8 +105,8 @@ module.exports = function(gdax, product) {
                         // if cancel order due to bid to too low, we should hurry cancel buy
                         gdax.cancelOrder(_lastOrder.id).then(value=> {
                             // and then sell what ever has been bought at the now higher rate.
-                            this.placeSellOrder(gdax, snapshot, efficient);
                             log.info('selling partial order of size', _lastOrder.filled_size);
+                            this.placeSellOrder(gdax, snapshot, efficient, _lastOrder);
                         });
                     } else {
                         gdax.cancelOrder(_lastOrder.id).then(value => {
@@ -131,7 +129,7 @@ module.exports = function(gdax, product) {
         };
 
         _lastOrder = wait.for.promise(gdax.buy(buyParams));
-        if(_lastOrder.status != 'pending') {
+        if(_lastOrder == null || _lastOrder.status != 'pending') {
         	log.error('cannot buy', _lastOrder);
         } else {
 	        _state = 'buy';
@@ -139,17 +137,17 @@ module.exports = function(gdax, product) {
         }
     }
 
-    this.placeSellOrder = function(gdax, snapshot, efficient) {
-        var ask = _.find(snapshot[_product].asks, (ask) => { return ask.price > _lastOrder.price });
+    this.placeSellOrder = function(gdax, snapshot, efficient, lastOrder) {
+        var ask = _.find(snapshot[_product].asks, (ask) => { return ask.price > lastOrder.price });
         var price = null;
         if(price < 0.01922) {
-        	// price = Math.max(ask.price, parseInt(efficient * 100000) / 100000, parseInt(_lastOrder.price * 1.03 * 100000)/100000);
+        	// price = Math.max(ask.price, parseInt(efficient * 100000) / 100000, parseInt(lastOrder.price * 1.03 * 100000)/100000);
         	price = Math.max(ask.price, parseInt(efficient * 100000) / 100000);
         } else { price = ask.price; }
         const sellParams = {
           'product_id': _product,
           'price': price,
-          'size': _lastOrder.filled_size,
+          'size': lastOrder.filled_size,
           'type': 'limit',
           'post_only': true,
         };

@@ -24,13 +24,13 @@ gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']).live();
 var seller = require('./seller.js');
 var GDAXTrader = require('./gdax-trader.js');
 var trader = new GDAXTrader(gdax, 'LTC-BTC');
-seller = new seller(gdax, 'LTC-BTC', 0.240);
+seller = new seller(gdax, 'LTC-BTC', 0.65);
 
 // game loop
 var lastTime = 0;
 tick.add((elapsed, delta, stop) => {
 
-	if(elapsed - lastTime < 5000) return; // too early
+	if(elapsed - lastTime < 4000) return; // too early
 
 	lastTime = elapsed;
 
@@ -61,7 +61,13 @@ tick.add((elapsed, delta, stop) => {
 	try
 	{
 		trader.trade(gdax, snapshot, spot, efficient);
-		// seller.trade(gdax, snapshot, spot, efficient);
+		// var state = trader.trade(gdax, snapshot, spot, efficient);
+		// log.debug(state, "spot, efficient", spot, efficient);
+		// if(sellerActive == false && state == 'broke') sellerActive = true;
+		// if(sellerActive == true) {
+		// 	state = seller.trade(gdax, snapshot, spot, efficient);
+		// 	if(state == 'done') sellerActive = false;
+		// }
 	}
 	catch(err)
 	{
@@ -69,6 +75,3 @@ tick.add((elapsed, delta, stop) => {
 		process.exit();
 	}
 });
-
-
-
