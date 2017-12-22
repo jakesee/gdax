@@ -60,8 +60,8 @@ tick.add((elapsed, delta, stop) => {
 	log.debug(trader.getState(), "spot, efficient", spot, efficient);
 	try
 	{
-		//trader.trade(gdax, snapshot, spot, efficient);
-		seller.trade(gdax, snapshot, spot, efficient);
+		trader.trade(gdax, snapshot, spot, efficient);
+		// seller.trade(gdax, snapshot, spot, efficient);
 	}
 	catch(err)
 	{

@@ -141,7 +141,7 @@ module.exports = function(gdax, product) {
 
     this.placeSellOrder = function(gdax, snapshot, efficient) {
         var ask = _.find(snapshot[_product].asks, (ask) => { return ask.price > _lastOrder.price });
-        var price = ask.price;
+        var price = Math.max(ask.price, efficient, _lastOrder.price * 1.03);
         const sellParams = {
           'product_id': _product,
           'price': price,
