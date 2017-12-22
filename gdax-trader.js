@@ -143,7 +143,8 @@ module.exports = function(gdax, product) {
         var ask = _.find(snapshot[_product].asks, (ask) => { return ask.price > _lastOrder.price });
         var price = null;
         if(price < 0.01922) {
-        	price = Math.max(ask.price, parseInt(efficient * 100000) / 100000, parseInt(_lastOrder.price * 1.03 * 100000)/100000);
+        	// price = Math.max(ask.price, parseInt(efficient * 100000) / 100000, parseInt(_lastOrder.price * 1.03 * 100000)/100000);
+        	price = Math.max(ask.price, parseInt(efficient * 100000));
         } else { price = ask.price; }
         const sellParams = {
           'product_id': _product,

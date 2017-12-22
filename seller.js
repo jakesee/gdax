@@ -40,6 +40,8 @@ module.exports = function(gdax, product, initialAccount) {
                 _sellOrder.price = (_targetMin - _accounts[_quoteCurrency].available) / _sellOrder.size;
                 console.log('min sell', _sellOrder.size, '@', _sellOrder.price);
 
+                process.exit();
+
                 if(_sellOrder.price > mean) {
                     console.log('Confirm? _sellOrder.price > mean:', _sellOrder.price, '>', mean);
                     process.exit();
