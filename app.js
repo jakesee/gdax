@@ -22,7 +22,7 @@ gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']).live();
 
 // trader
 var Trader = require('./Trader.js');
-var trader = new Trader(gdax, 'LTC-BTC', 0.1);
+var trader = new Trader(gdax, 'LTC-BTC', 1);
 
 // game loop
 var lastTime = 0;
