@@ -30,17 +30,16 @@ module.exports = function(gdax, product) {
 
         if((_state == null || _state == 'wtb')  && undervalued  && _accounts[_quoteCurrency].available > 0.000001)
         {
-            // this.updateOpenSells(gdax);
-            // if(!_tooManyOpenSells) this.placeBuyOrder(gdax, snapshot);
-            // else {
-            //     // ask seller to help to sell
-            // }
-            this.placeBuyOrder(gdax, snapshot);
+            this.updateOpenSells(gdax);
+            if(!_tooManyOpenSells) this.placeBuyOrder(gdax, snapshot);
+            else {
+                // ask seller to help to sell
+            }
         }
         else if(_state == 'wts') {
             this.placeSellOrder(gdax, snapshot, efficient, _lastOrder);
         }  
-        else if(_state == 'buy')
+        else if(_state == 'buy' && spot < 0.01922) // don't buy when price is too high
         {
             let bidTooLow = _lastOrder.price < snapshot[_product].bids[1].price;
             if(bidTooLow) log.info('bidTooLow', _lastOrder.price, '<', snapshot[_product].bids[1].price);
@@ -99,21 +98,18 @@ module.exports = function(gdax, product) {
                         process.exit();
                     }
                 } else if(cancelOrder) {
-                    if(Number(_lastOrder.filled_size) > 0) { // check whether order is partially filled
-                        log.info('cancelling partially filled order...'); // cancel if only not started filling
-
-                        // if cancel order due to bid to too low, we should hurry cancel buy
-                        gdax.cancelOrder(_lastOrder.id).then(value=> {
+                	_state = 'cancel';
+                	var lastOrder = _.defaults({}, _lastOrder); // copy the properties over
+                    // if cancel order due to bid to too low, we should hurry cancel buy
+                    gdax.cancelOrder(lastOrder.id).then(order => {
+                    	if(Number(lastOrder.filled_size) > 0) { // check whether order is partially filled
+                    		log.info('cancelled partially filled order');
                             // and then sell what ever has been bought at the now higher rate.
-                            log.info('selling partial order of size', _lastOrder.filled_size);
-                            this.placeSellOrder(gdax, snapshot, efficient, _lastOrder);
-                        });
-                    } else {
-                        gdax.cancelOrder(_lastOrder.id).then(value => {
-                            log.info('cancel', _state);
-                            _state = 'wtb';
-                        });
-                    }
+                            log.info('selling partial order of size', lastOrder.filled_size);
+							_state = 'wts';
+                            this.placeSellOrder(gdax, snapshot, efficient, lastOrder);
+                        }
+                    });
                 }
             }
         });
@@ -139,11 +135,7 @@ module.exports = function(gdax, product) {
 
     this.placeSellOrder = function(gdax, snapshot, efficient, lastOrder) {
         var ask = _.find(snapshot[_product].asks, (ask) => { return ask.price > lastOrder.price });
-        var price = null;
-        if(price < 0.01922) {
-        	// price = Math.max(ask.price, parseInt(efficient * 100000) / 100000, parseInt(lastOrder.price * 1.03 * 100000)/100000);
-        	price = Math.max(ask.price, parseInt(efficient * 100000) / 100000);
-        } else { price = ask.price; }
+        var price = price = Math.max(ask.price, parseInt(efficient * 100000) / 100000);
         const sellParams = {
           'product_id': _product,
           'price': price,
@@ -153,11 +145,19 @@ module.exports = function(gdax, product) {
         };
 
         var order = wait.for.promise(gdax.sell(sellParams));
-        if(order.status != 'pending') {
-            log.warn(order);
+        if(order == null || order.status != 'pending') {
+            log.warn('sell warn', order);
+            _state = 'wts';
         } else {
             _state = 'wtb'; // prepare to start the next buy-sell pair
             log.info('sell', order.size, '@', order.price);
         }
     }
 }
+
+// strategy
+/* 
+if(spot < 1900) buy and sell at efficient
+if(spot < 1922) buy and sell at lowest ask price
+if(spot > 1922) buy and sell one by one
+*/
