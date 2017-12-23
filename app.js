@@ -21,7 +21,7 @@ var gdax = new Gdax(config.key, config.b64secret, config.passphrase, config.apiU
 gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC']).live();
 
 // trader
-var Trader = require('./Trader.js');
+var Trader = require('./trader.js');
 var trader = new Trader(gdax, 'LTC-BTC', 1);
 
 // game loop
