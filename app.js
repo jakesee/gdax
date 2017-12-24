@@ -58,7 +58,7 @@ tick.add((elapsed, delta, stop) => {
 	log.debug(trader.state(), "spot, efficient", spot, efficient);
 	try
 	{
-		trader.buy(snapshot, spot, efficient, 0.01932);
+		trader.buy(snapshot, spot, efficient, 0.01969);
 	}
 	catch(err)
 	{
