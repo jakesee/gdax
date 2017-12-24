@@ -96,7 +96,7 @@ module.exports = function(gdax, product, initialAccount) {
 
         var order = wait.for.promise(gdax.sell(sellParams));
         if(order.status != 'pending') {
-            log.warn(order);
+            log.warn(order, sellParams);
         } else {
             _lastOrder = order;
             _state = 'sell'; // prepare to start the next buy-sell pair

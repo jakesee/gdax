@@ -25,15 +25,17 @@ var Trader = function(gdax, product, buySize) {
 		// -----------------------------------------
 		var undervalued = spot < efficient; 
 		var overvalued = !undervalued;
-		var spotAcceptable = snapshot[_product].bids[0].price <= maxBid;
+		var safeBid = snapshot[_product].bids[0].price < maxBid;
 		var haveMoney = _accounts[_quoteCurrency].available > 0.000001;
-		if(_state == 'wtb' && undervalued && spotAcceptable && haveMoney) {
+		if(_state == 'wtb' && undervalued && safeBid && haveMoney) {
 			this.placeBuyOrder(snapshot);
 		} else if(_state == 'wts') {
-			this.placeSellOrder(snapshot, efficient, _.default({}, _lastOrder));
+			this.placeSellOrder(snapshot, efficient, _lastOrder);
 		} else if(_state == 'buy') { // need to check whether the order status
 			let bidTooLow = _lastOrder.price < snapshot[_product].bids[1].price;
 			this.checkBuyStatus(snapshot, spot, efficient, overvalued || bidTooLow);
+		} else if(!safeBid) {
+			log.debug('Not safeBid, time to sell.', snapshot[_product].bids[0].price, '>', maxBid);
 		}
 	}
 
@@ -56,7 +58,7 @@ var Trader = function(gdax, product, buySize) {
 	    var order = wait.for.promise(_gdax.buy(buyParams));
 	    if(order == null || order.status != 'pending') {
 	    	// No state change. On next tick, the buy will attempt again
-	    	log.error('cannot buy', order);
+	    	log.error('cannot buy', order, buyParams);
 	    } else {
 	    	_lastOrder = order;
 	        _state = 'buy';
@@ -78,7 +80,7 @@ var Trader = function(gdax, product, buySize) {
         var order = wait.for.promise(_gdax.sell(sellParams));
         if(order == null || order.status != 'pending') {
         	// No state change. On next tick, the sell will attempt again
-            log.error('cannot sell', order);
+            log.error('cannot sell', order, sellParams);
         } else {
             _state = 'wtb'; // prepare to start the next buy-sell pair
             log.info('sell', order.size, '@', order.price);
@@ -87,9 +89,8 @@ var Trader = function(gdax, product, buySize) {
 
 	this.checkBuyStatus = function(snapshot, spot, efficient, cancelOrder) {
 		var order = wait.for.promise(_gdax.getOrder(_lastOrder.id));
-		if(order.message == 'NotFound') {
+		if(order.message == 'NotFound') { // cancelled manually or by cancelOrder flag
 			log.error('Exited. _lastOrder not found:', _lastOrder);
-			_lastOrder = null;
 			process.exit();
 		} else {
 			_lastOrder = order; // update order;
@@ -101,7 +102,7 @@ var Trader = function(gdax, product, buySize) {
                     _state = _lastOrder.filled_size > 0 ? 'wts' : 'wtb';
                 } else if(_lastOrder.done_reason == 'filled') {
 					log.info('bought', _lastOrder.size, '@', _lastOrder.price);
-					state = 'wts';
+					_state = 'wts';
 				} else if(_lastOrder.status == 'rejected') {
                     _state = 'wtb';
                     log.info('_lastOrder rejected', _lastOrder.reject_reason);
@@ -119,10 +120,3 @@ var Trader = function(gdax, product, buySize) {
 }
 
 module.exports = Trader;
-
-/*
-buyer
-
-Buys
-
-*/
