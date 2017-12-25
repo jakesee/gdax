@@ -26,7 +26,7 @@ var Trader = function(gdax, product, buySize) {
 		var undervalued = spot < efficient; 
 		var overvalued = !undervalued;
 		var safeBid = snapshot[_product].bids[0].price < maxBid;
-		var haveMoney = _accounts[_quoteCurrency].available > 0.000001;
+		var haveMoney = _accounts[_quoteCurrency].available >= snapshot[_product].bids[0].price;
 		if(_state == 'wtb' && undervalued && safeBid && haveMoney) {
 			this.placeBuyOrder(snapshot);
 		} else if(_state == 'wts') {
