@@ -35,7 +35,7 @@ var Trader = function(gdax, product, buySize) {
 			let bidTooLow = _lastOrder.price < snapshot[_product].bids[1].price;
 			this.checkBuyStatus(snapshot, spot, efficient, overvalued || bidTooLow);
 		} else if(!safeBid) {
-			log.debug('Not safeBid, time to sell.', snapshot[_product].bids[0].price, '>', maxBid);
+			log.debug(_product, 'not safeBid, time to sell.', snapshot[_product].bids[0].price, '>', maxBid);
 		}
 	}
 
@@ -62,7 +62,7 @@ var Trader = function(gdax, product, buySize) {
 	    } else {
 	    	_lastOrder = order;
 	        _state = 'buy';
-	        log.info(_state, _lastOrder.size, '@', _lastOrder.price);
+	        log.info(_state, _product, _lastOrder.size, '@', _lastOrder.price);
 	    }
 	}
 
@@ -90,28 +90,28 @@ var Trader = function(gdax, product, buySize) {
 	this.checkBuyStatus = function(snapshot, spot, efficient, cancelOrder) {
 		var order = wait.for.promise(_gdax.getOrder(_lastOrder.id));
 		if(order.message == 'NotFound') { // cancelled manually or by cancelOrder flag
-			log.error('Exited. _lastOrder not found:', _lastOrder);
+			log.error(_product, 'Exited. _lastOrder not found:', _lastOrder);
 			process.exit();
 		} else {
 			_lastOrder = order; // update order;
-			log.debug(_state, _lastOrder.filled_size, '/', _lastOrder.size, '@', _lastOrder.price);
+			log.debug(_state, _product, _lastOrder.filled_size, '/', _lastOrder.size, '@', _lastOrder.price);
 			if(_lastOrder.settled == true) {
 				_gdax.getAccounts().then(accounts => { _accounts = accounts; }); // update accounts asyncly
 				if(_lastOrder.done_reason == 'canceled') {
-                    log.info('cancelled', _state, _lastOrder.size, '@', _lastOrder.price);
+                    log.info('cancelled', _product, _state, _lastOrder.size, '@', _lastOrder.price);
                     _state = _lastOrder.filled_size > 0 ? 'wts' : 'wtb';
                 } else if(_lastOrder.done_reason == 'filled') {
-					log.info('bought', _lastOrder.size, '@', _lastOrder.price);
+					log.info('bought', _product, _lastOrder.size, '@', _lastOrder.price);
 					_state = 'wts';
 				} else if(_lastOrder.status == 'rejected') {
                     _state = 'wtb';
-                    log.info('_lastOrder rejected', _lastOrder.reject_reason);
+                    log.info(_product, '_lastOrder rejected', _lastOrder.reject_reason);
                 } else {
-                    log.error('Exited. _lastOrder settled with unknown done_reason:', _lastOrder);
+                    log.error(_product, 'Exited. _lastOrder settled with unknown done_reason:', _lastOrder);
                     process.exit();
                 }
 			} else if(cancelOrder) {
-				log.info('cancel', _state);
+				log.info(_product, 'cancel', _state);
 				_gdax.cancelOrder(_lastOrder.id); // immediately cancel buy asyncly
 				_state = _lastOrder.filled_size > 0 ? 'wts' : 'wtb';
 			}
