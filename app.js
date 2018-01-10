@@ -61,7 +61,7 @@ tick.add((elapsed, delta, stop) => {
 			'efficient': parseInt(Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price) * 1000000) / 1000000
 		}
 		log.debug(columnify([ltc]));		
-		traderLTC.sell(snapshot, ltc.spot, ltc.efficient);
+		traderLTC.buy(snapshot, ltc.spot, ltc.efficient);
 	}
 	catch(err)
 	{
