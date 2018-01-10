@@ -22,8 +22,7 @@ gdax.start(['BTC-USD', 'LTC-USD', 'LTC-BTC', 'ETH-BTC', 'ETH-USD']).live();
 
 // trader
 var Trader = require('./trader.js');
-var traderLTC = new Trader(gdax, 'LTC-BTC', 1);
-var traderETH = new Trader(gdax, 'ETH-BTC', 0.5);
+var traderLTC = new Trader(gdax, 'LTC-BTC', 1, 9999, 0.01600);
 
 // game loop
 var lastTime = 0;
@@ -52,23 +51,17 @@ tick.add((elapsed, delta, stop) => {
 	//   time: '2017-12-14T04:41:36.789000Z',
 	//   trade_id: 28187314,
 	//   last_size: '0.01900000' }
+
 	try
 	{
 		var ltc = {
 			'trader': traderLTC.state(),
 			'product': 'LTC-BTC',
 			'spot': Number(snapshot['LTC-BTC'].ticker.price),
-			'efficient': parseInt(Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price) * 100000) / 100000
+			'efficient': parseInt(Number(snapshot['LTC-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price) * 1000000) / 1000000
 		}
-		var eth = {
-			'trader': traderETH.state(),
-			'product': 'ETH-BTC',
-			'spot': Number(snapshot['ETH-BTC'].ticker.price),
-			'efficient': parseInt(Number(snapshot['ETH-USD'].ticker.price) / Number(snapshot['BTC-USD'].ticker.price) * 100000) / 100000
-		}
-		log.debug(columnify([ltc, eth]));
-		traderLTC.buy(snapshot, ltc.spot, ltc.efficient, 0.01969);
-		traderETH.buy(snapshot, eth.spot, eth.efficient, 0.05200);
+		log.debug(columnify([ltc]));		
+		traderLTC.sell(snapshot, ltc.spot, ltc.efficient);
 	}
 	catch(err)
 	{
