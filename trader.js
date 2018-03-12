@@ -27,7 +27,7 @@ gdax
 product
     The product to trade, e.g. LTC-BTC. This product must exist on GDAX.
 tradesize
-	Size of each bur order
+	Size of each buy order
 maxBid
 	The maximum price at which buying is allowed.
 minAsk
@@ -122,7 +122,7 @@ var Trader = function(gdax, product, tradeSize, maxBid, minAsk) {
 			'safeBid': snapshot[_product].bids[0].price < _maxBid, // don't buy too high
 			'safeAsk': snapshot[_product].asks[0].price > _minAsk, // don't sell too low
 			'haveMoney': _accounts[_quoteCurrency].available >= snapshot[_product].bids[0].price,
-			'haveProduct': _accounts[_baseCurrency].available > 11,
+			'haveProduct': _accounts[_baseCurrency].available > 3,
 		};
 	}
 
